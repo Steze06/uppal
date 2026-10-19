@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
+<nta>
+	<declaration>
+/* broadcast channel between automata */
+broadcast chan next_state;
+ /* global variables */
+//action type
+//0: undefined, 1: creation, 2: transition
+//3: read, 4:undeterministic write, 5: store,
+//6 to 6+(2n-1): f and f^{-1} inversibles functions
+//6+2n to 6+2n+m-1 : g deterministic write functions
+const int n = 1;
+const int m = 1;
+int[0,6+2*n+m] action = 0;
+
+//integrity request requirement
+bool integ_r = false;
+ //integrity control request requirement
+ bool integ_cr = false;
+//enclave protected
+bool p = false;
+//enclave with signature service offered
+bool s = false;
+
+</declaration>
+	<template>
+		<name>path8</name>
+		<location id="id0" x="-663" y="-153">
+			<name x="-688" y="-144">state_1</name>
+		</location>
+		<location id="id1" x="-603" y="-153">
+			<name x="-595" y="-178">state_2</name>
+		</location>
+		<location id="id2" x="-527" y="-153">
+			<name x="-518" y="-153">state_3</name>
+		</location>
+		<location id="id3" x="-450" y="-153">
+			<name x="-442" y="-178">state_4</name>
+		</location>
+		<location id="id4" x="-102" y="-153">
+			<name x="-110" y="-187">end</name>
+		</location>
+		<location id="id5" x="-357" y="-153">
+			<name x="-348" y="-178">state_5</name>
+		</location>
+		<location id="id6" x="-272" y="-153">
+			<name x="-263" y="-178">state_6</name>
+		</location>
+		<location id="id7" x="-187" y="-153">
+			<name x="-178" y="-178">state_7</name>
+		</location>
+		<init ref="id0"/>
+		<transition id="id8">
+			<source ref="id7"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="-229" y="-289">next_state!</label>
+			<label kind="assignment" x="-229" y="-280">action = 3,
+p = true,
+s = true,
+integ_r = false,
+integ_cr = true</label>
+		</transition>
+		<transition id="id9">
+			<source ref="id6"/>
+			<target ref="id7"/>
+			<label kind="synchronisation" x="-306" y="-144">next_state!</label>
+			<label kind="assignment" x="-306" y="-127">action = 8,
+p = false,
+s = false,
+integ_r = false,
+integ_cr = false</label>
+		</transition>
+		<transition id="id10">
+			<source ref="id5"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="-374" y="-289">next_state!</label>
+			<label kind="assignment" x="-374" y="-272">action = 6,
+p = false,
+s = false,
+integ_r = false,
+integ_cr = false</label>
+		</transition>
+		<transition id="id11">
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="synchronisation" x="-680" y="-289">next_state!</label>
+			<label kind="assignment" x="-680" y="-272">action = 1,
+p = true,
+s = true,
+integ_r = true,
+integ_cr = false</label>
+		</transition>
+		<transition id="id12">
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="-629" y="-144">next_state!</label>
+			<label kind="assignment" x="-629" y="-127">action = 7,
+p = false,
+s = false,
+integ_r = false,
+integ_cr = false</label>
+		</transition>
+		<transition id="id13">
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-527" y="-289">next_state!</label>
+			<label kind="assignment" x="-527" y="-272">action = 6,
+p = false,
+s = false,
+integ_r = false,
+integ_cr = false</label>
+		</transition>
+		<transition id="id14">
+			<source ref="id3"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-467" y="-144">next_state!</label>
+			<label kind="assignment" x="-467" y="-127">action = 7,
+p = false,
+s = false,
+integ_r = false,
+integ_cr = false</label>
+		</transition>
+		<transition id="id15">
+			<source ref="id4"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="-144" y="-143">next_state!</label>
+			<label kind="assignment" x="-144" y="-127">action = 3,
+p = true,
+s = true,
+integ_r = false,
+integ_cr = true</label>
+			<nail x="-59" y="-178"/>
+			<nail x="-59" y="-144"/>
+			<nail x="-67" y="-144"/>
+		</transition>
+	</template>
+	<template>
+		<name>prop1</name>
+		<location id="id16" x="-314" y="-51">
+		</location>
+		<location id="id17" x="-68" y="-51">
+		</location>
+		<location id="id18" x="136" y="-51">
+			<name x="126" y="-85">ok</name>
+		</location>
+		<location id="id19" x="-178" y="-51">
+		</location>
+		<location id="id20" x="-68" y="51">
+		</location>
+		<location id="id21" x="-204" y="136">
+			<name x="-264" y="103">Error</name>
+		</location>
+		<location id="id22" x="25" y="-136">
+		</location>
+		<init ref="id16"/>
+		<transition id="id23">
+			<source ref="id22"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-8" y="-102">p == false</label>
+			<label kind="synchronisation" x="0" y="-85">next_state?</label>
+			<nail x="17" y="-102"/>
+			<nail x="-8" y="-76"/>
+			<nail x="-8" y="-76"/>
+			<nail x="-8" y="-76"/>
+		</transition>
+		<transition id="id24">
+			<source ref="id22"/>
+			<target ref="id18"/>
+			<label kind="guard" x="76" y="-136">p == true and
+integ_cr == true</label>
+			<label kind="synchronisation" x="68" y="-153">next_state?</label>
+		</transition>
+		<transition id="id25">
+			<source ref="id17"/>
+			<target ref="id22"/>
+			<label kind="guard" x="-93" y="-161">p == true and s == true</label>
+			<label kind="synchronisation" x="-93" y="-178">next_state?</label>
+			<nail x="-17" y="-93"/>
+			<nail x="-17" y="-93"/>
+		</transition>
+		<transition id="id26">
+			<source ref="id19"/>
+			<target ref="id21"/>
+			<label kind="guard" x="-365" y="25">integ_r == true and
+p == false</label>
+			<label kind="synchronisation" x="-357" y="8">next_state?</label>
+			<nail x="-272" y="8"/>
+			<nail x="-272" y="34"/>
+			<nail x="-272" y="51"/>
+		</transition>
+		<transition id="id27">
+			<source ref="id20"/>
+			<target ref="id21"/>
+			<label kind="guard" x="-127" y="102">p == false</label>
+			<label kind="synchronisation" x="-127" y="85">next_state?</label>
+		</transition>
+		<transition id="id28">
+			<source ref="id20"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-51" y="34">p == true and s == true</label>
+			<label kind="synchronisation" x="-51" y="17">next_state?</label>
+		</transition>
+		<transition id="id29">
+			<source ref="id19"/>
+			<target ref="id20"/>
+			<label kind="guard" x="-195" y="-25">integ_r == true and
+p==true and
+s == false</label>
+			<label kind="synchronisation" x="-187" y="-42">next_state?</label>
+		</transition>
+		<transition id="id30">
+			<source ref="id19"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-221" y="-119">integ_r == true and p == true and s == true</label>
+			<label kind="synchronisation" x="-221" y="-136">next_state?</label>
+		</transition>
+		<transition id="id31">
+			<source ref="id17"/>
+			<target ref="id18"/>
+			<label kind="guard" x="76" y="-8">integ_cr == true and p == true</label>
+			<label kind="synchronisation" x="76" y="-25">next_state?</label>
+		</transition>
+		<transition id="id32">
+			<source ref="id16"/>
+			<target ref="id19"/>
+			<label kind="synchronisation" x="-297" y="-85">next_state?</label>
+			<nail x="-255" y="-51"/>
+			<nail x="-246" y="-51"/>
+			<nail x="-229" y="-51"/>
+			<nail x="-212" y="-51"/>
+		</transition>
+	</template>
+	<template>
+		<name>prop2</name>
+		<location id="id33" x="0" y="0">
+		</location>
+		<location id="id34" x="136" y="0">
+			<name x="68" y="25">invariant</name>
+		</location>
+		<location id="id35" x="161" y="-127">
+			<name x="127" y="-178">inv_f</name>
+		</location>
+		<location id="id36" x="136" y="127">
+			<name x="102" y="119">f</name>
+		</location>
+		<location id="id37" x="272" y="-127">
+			<name x="221" y="-110">unmanaged_inv_f2</name>
+		</location>
+		<location id="id38" x="272" y="127">
+			<name x="229" y="144">unmanaged_f2</name>
+		</location>
+		<location id="id39" x="399" y="0">
+			<name x="416" y="0">g</name>
+		</location>
+		<location id="id40" x="391" y="-127">
+			<name x="416" y="-144">g_inv_f</name>
+		</location>
+		<location id="id41" x="391" y="127">
+			<name x="416" y="119">g_f</name>
+		</location>
+		<location id="id42" x="510" y="0">
+			<name x="467" y="25">at_least_2_g</name>
+		</location>
+		<location id="id43" x="272" y="-212">
+			<name x="288" y="-229">unmanaged_inv_f_g</name>
+		</location>
+		<location id="id44" x="272" y="204">
+			<name x="289" y="170">unmanaged_f_g</name>
+		</location>
+		<init ref="id33"/>
+		<transition id="id45">
+			<source ref="id36"/>
+			<target ref="id44"/>
+			<label kind="guard" x="382" y="187">action == 8</label>
+			<label kind="synchronisation" x="289" y="187">next_state?</label>
+			<nail x="178" y="187"/>
+		</transition>
+		<transition id="id46">
+			<source ref="id35"/>
+			<target ref="id43"/>
+			<label kind="guard" x="382" y="-212">action == 8</label>
+			<label kind="synchronisation" x="288" y="-212">next_state?</label>
+			<nail x="195" y="-195"/>
+		</transition>
+		<transition id="id47">
+			<source ref="id41"/>
+			<target ref="id42"/>
+			<label kind="guard" x="420" y="67">action ==8</label>
+			<label kind="synchronisation" x="420" y="84">next_state?</label>
+			<nail x="450" y="76"/>
+			<nail x="450" y="76"/>
+		</transition>
+		<transition id="id48">
+			<source ref="id39"/>
+			<target ref="id42"/>
+			<label kind="guard" x="417" y="-34">action == 8</label>
+			<label kind="synchronisation" x="417" y="-17">next_state?</label>
+		</transition>
+		<transition id="id49">
+			<source ref="id40"/>
+			<target ref="id42"/>
+			<label kind="guard" x="409" y="-97">action == 8</label>
+			<label kind="synchronisation" x="409" y="-80">next_state?</label>
+		</transition>
+		<transition id="id50">
+			<source ref="id41"/>
+			<target ref="id38"/>
+			<label kind="guard" x="290" y="93">action == 8</label>
+			<label kind="synchronisation" x="290" y="110">next_state?</label>
+		</transition>
+		<transition id="id51">
+			<source ref="id40"/>
+			<target ref="id37"/>
+			<label kind="guard" x="290" y="-161">action == 7</label>
+			<label kind="synchronisation" x="289" y="-178">next_state?</label>
+		</transition>
+		<transition id="id52">
+			<source ref="id41"/>
+			<target ref="id39"/>
+			<label kind="guard" x="280" y="59">action == 7</label>
+			<label kind="synchronisation" x="272" y="34">next_state?</label>
+			<nail x="365" y="59"/>
+		</transition>
+		<transition id="id53">
+			<source ref="id39"/>
+			<target ref="id41"/>
+			<label kind="guard" x="391" y="51">action == 6</label>
+			<label kind="synchronisation" x="391" y="34">next_state?</label>
+			<nail x="425" y="59"/>
+		</transition>
+		<transition id="id54">
+			<source ref="id40"/>
+			<target ref="id39"/>
+			<label kind="guard" x="425" y="-42">action == 6</label>
+			<label kind="synchronisation" x="425" y="-59">next_state?</label>
+			<nail x="425" y="-68"/>
+		</transition>
+		<transition id="id55">
+			<source ref="id39"/>
+			<target ref="id40"/>
+			<label kind="guard" x="280" y="-42">action == 7</label>
+			<label kind="synchronisation" x="280" y="-59">next_state?</label>
+			<nail x="357" y="-68"/>
+		</transition>
+		<transition id="id56">
+			<source ref="id34"/>
+			<target ref="id39"/>
+			<label kind="guard" x="280" y="0">action == 8</label>
+			<label kind="synchronisation" x="187" y="0">next_state?</label>
+		</transition>
+		<transition id="id57">
+			<source ref="id36"/>
+			<target ref="id38"/>
+			<label kind="guard" x="153" y="127">action == 6</label>
+			<label kind="synchronisation" x="170" y="102">next_state?</label>
+		</transition>
+		<transition id="id58">
+			<source ref="id35"/>
+			<target ref="id37"/>
+			<label kind="guard" x="179" y="-161">action == 7</label>
+			<label kind="synchronisation" x="187" y="-178">next_state?</label>
+		</transition>
+		<transition id="id59">
+			<source ref="id36"/>
+			<target ref="id34"/>
+			<label kind="guard" x="170" y="59">action == 7</label>
+			<label kind="synchronisation" x="170" y="34">next_state?</label>
+			<nail x="161" y="68"/>
+			<nail x="161" y="59"/>
+		</transition>
+		<transition id="id60">
+			<source ref="id34"/>
+			<target ref="id36"/>
+			<label kind="guard" x="25" y="93">action == 6</label>
+			<label kind="synchronisation" x="51" y="76">next_state?</label>
+			<nail x="102" y="68"/>
+		</transition>
+		<transition id="id61">
+			<source ref="id35"/>
+			<target ref="id34"/>
+			<label kind="guard" x="34" y="-93">action == 6</label>
+			<label kind="synchronisation" x="42" y="-110">next_state?</label>
+			<nail x="119" y="-68"/>
+		</transition>
+		<transition id="id62">
+			<source ref="id34"/>
+			<target ref="id35"/>
+			<label kind="guard" x="170" y="-42">action == 7</label>
+			<label kind="synchronisation" x="178" y="-59">next_state?</label>
+			<nail x="178" y="-59"/>
+		</transition>
+		<transition id="id63">
+			<source ref="id33"/>
+			<target ref="id34"/>
+			<label kind="synchronisation" x="17" y="-42">next_state?</label>
+		</transition>
+	</template>
+	<system>
+system prop1, prop2, path8;
+</system>
+	<queries>
+		<query>
+			<formula>E&lt;&gt;( prop1.ok &amp;&amp; prop2.f)</formula>
+			<comment/>
+			<result outcome="failure" type="quality" timestamp="2026-10-05 17:20:36 +0200">
+			</result>
+		</query>
+		<query>
+			<formula>E&lt;&gt;( prop1.ok &amp;&amp; prop2.g)</formula>
+			<comment/>
+			<option key="--diagnostic" value="0"/>
+			<result outcome="success" type="quality" timestamp="2026-10-05 17:20:00 +0200">
+				<option key="--diagnostic" value="0"/>
+			</result>
+		</query>
+	</queries>
+</nta>

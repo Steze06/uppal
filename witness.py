@@ -1,7 +1,7 @@
 from collections import deque
 
 from automaton import describe
-from check import INITIAL_VARS, apply_update, holds
+from product import INITIAL_VARS, apply_update, holds
 from path8 import build_path8
 from prop1 import build_prop1
 from prop2 import build_prop2
@@ -9,6 +9,7 @@ from prop2 import build_prop2
 QUERIES = [
 	("E<>( prop1.ok && prop2.f)", ("ok", "f")),
 	("E<>( prop1.ok && prop2.g)", ("ok", "g")),
+	("E<>( prop1.ok && prop2.at_least_2_g)", ("ok", "at_least_2_g"))
 ]
 
 

@@ -1,10 +1,8 @@
 import xml.etree.ElementTree as ET
-from collections import deque
-
-from automaton import Node
 from path8 import build_path8
 from prop1 import build_prop1
 from prop2 import build_prop2
+from product import build_product
 
 XML_FILE = "fichier_f_ref.xml"
 
@@ -82,50 +80,6 @@ def compare(name, template, initial):
 	return ok
 
 
-# --- simulation of the system "prop1, prop2, path8" -------------------------
-
-INITIAL_VARS = {"action": 0, "integ_r": False, "integ_cr": False, "p": False, "s": False}
-
-
-def holds(guard, variables):
-	if not guard:
-		return True
-	return eval(guard, {"true": True, "false": False}, dict(variables))
-
-
-def apply_update(update, variables):
-	variables = dict(variables)
-	for assignment in filter(None, update.split(",")):
-		var, value = (part.strip() for part in assignment.split("="))
-		variables[var] = {"true": True, "false": False}.get(value, None)
-		if variables[var] is None:
-			variables[var] = int(value)
-	return variables
-
-
-def reachable_states(sender, receivers):
-	"""Every edge of the sender broadcasts next_state!; each receiver takes one
-	enabled next_state? edge (guards read the values before the update) or stays."""
-	start = (sender, tuple(receivers), tuple(sorted(INITIAL_VARS.items())))
-	seen = {start}
-	queue = deque([start])
-	while queue:
-		sender_node, receiver_nodes, variables = queue.popleft()
-		variables = dict(variables)
-		for edge in sender_node.transitions:
-			choices = [[]]
-			for node in receiver_nodes:
-				enabled = [t.target for t in node.transitions if holds(t.guard, variables)]
-				choices = [c + [target] for c in choices for target in (enabled or [node])]
-			new_vars = tuple(sorted(apply_update(edge.update, variables).items()))
-			for choice in choices:
-				state = (edge.target, tuple(choice), new_vars)
-				if state not in seen:
-					seen.add(state)
-					queue.append(state)
-	return seen
-
-
 def main():
 	root = ET.parse(XML_FILE).getroot()
 	templates = {t.find("name").text: t for t in root.findall("template")}
@@ -143,15 +97,15 @@ def main():
 	print("All templates match the XML." if all_match else "Some templates differ from the XML.")
 
 	print()
-	print("=== 2. Queries from the XML, checked by simulating the Python models ===")
-	states = reachable_states(path8_start, [prop1_start, prop2_start])
-	print(f"{len(states)} reachable states")
+	print("=== 2. Queries from the XML, checked on the product automaton ===")
+	initial, states = build_product(path8_start, [prop1_start, prop2_start])
+	print(f"product: {len(states)} states, initial state {initial.name}")
 	queries = [
 		("E<>( prop1.ok && prop2.f)", "ok", "f"),
 		("E<>( prop1.ok && prop2.g)", "ok", "g"),
 	]
 	for formula, prop1_name, prop2_name in queries:
-		satisfied = any(r[0].name == prop1_name and r[1].name == prop2_name for _, r, _ in states)
+		satisfied = any(r[0].name == prop1_name and r[1].name == prop2_name for _, *r in (s.locations for s in states))
 		print(f"{formula}: {'satisfied' if satisfied else 'NOT satisfied'}")
 
 

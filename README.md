@@ -9,7 +9,7 @@ The model has three parts:
 
 The question we want answered: can path8 lead the watchers into certain states (for example `prop1` in `ok` and `prop2` in `f`)?
 
-On top of that model there is an extended version with **two invertible functions (f1, f2)** and **three non-invertible functions (g1, g2, g3)**, with several paths to walk through it. See [Extended model: f1, f2, g1, g2, g3](#extended-model-f1-f2-g1-g2-g3).
+On top of that we built an extended version with two invertible functions (f1, f2) and three functions that can't be undone (g1, g2, g3), plus a set of paths to walk through it. It's explained further down, in [Extended model: f1, f2, g1, g2, g3](#extended-model-f1-f2-g1-g2-g3).
 
 ## Files
 
@@ -25,7 +25,7 @@ Extended model:
 
 - `functions.py`: the list of functions (f1, f2, g1, g2, g3) and the action number of each one.
 - `prop2_fg.py`: builds prop2 for any list of f and g functions.
-- `paths_fg.py`: builds a path from a list of function names, plus the list of example paths.
+- `paths_fg.py`: builds a path from a list of function names, and holds the example paths.
 - `iterations_fg.py`: runs every example path against prop1 and the extended prop2 and prints each step.
 
 ## How to run
@@ -54,158 +54,157 @@ The `uppaal-5.0.0-linux64` folder has the UPPAAL tool, if you want to open the o
 
 ### The shared values
 
-All the parts read and write the same global values, taken from the declarations in the XML:
+All the parts read and write the same global values. They come from the declarations at the top of the XML, and they all start at zero or false:
 
-| Value      | Type | Start | Meaning                                    |
-|------------|------|-------|--------------------------------------------|
-| `action`   | int  | `0`   | the kind of action done at this step       |
-| `integ_r`  | bool | false | integrity is requested                     |
-| `integ_cr` | bool | false | integrity control is requested             |
-| `p`        | bool | false | the enclave is protected                   |
-| `s`        | bool | false | the enclave offers a signature service     |
+- `action` (a number, starts at `0`): what kind of action happens at this step.
+- `integ_r` (true/false): integrity is requested.
+- `integ_cr` (true/false): integrity control is requested.
+- `p` (true/false): the enclave is protected.
+- `s` (true/false): the enclave offers a signature service.
 
-The `action` numbers come from the XML:
+The numbers for `action` are also defined in the XML:
 
-| `action` | Meaning                                             |
-|----------|-----------------------------------------------------|
-| 0        | undefined                                           |
-| 1        | creation                                            |
-| 2        | transition                                          |
-| 3        | read                                                |
-| 4        | non-deterministic write                             |
-| 5        | store                                               |
-| 6 to 6+2n-1 | the f functions and their inverses (n functions) |
-| 6+2n to 6+2n+m-1 | the g functions (m functions)              |
+- `0` undefined, `1` creation, `2` transition, `3` read, `4` non-deterministic write, `5` store.
+- From `6` on come the f functions, each one followed by its inverse. With `n` f functions they take the numbers `6` to `6 + 2n - 1`.
+- Right after them come the g functions. With `m` g functions they take the numbers `6 + 2n` to `6 + 2n + m - 1`.
 
-In the XML `n = 1` and `m = 1`, so f is `6`, the inverse of f is `7` and g is `8`.
+The XML has `n = 1` and `m = 1`, so there f is `6`, its inverse is `7` and g is `8`.
 
 ### How the parts move together
 
-The path is the **sender**: at each step it sets new values and sends `next_state!`.
+The path is the one that drives everything. At each step it sets new values and sends `next_state!`.
 
-prop1 and prop2 are **receivers**: each time the path sends `next_state!`, each of them takes one arrow whose guard is true, if there is one. If none of their arrows is allowed, they stay where they are.
+prop1 and prop2 listen. Every time the path sends `next_state!`, each of them looks at its arrows and takes one whose guard is true. If none of them is allowed, it just stays where it is.
 
-Guards are checked against the values **before** the path changes them. This means a watcher reacts to a value one step after the path sets it. You can see this in every trace: the path sets `action = 6` at one step, and prop2 moves to `f1` only at the next step.
+One thing to keep in mind: the guards are checked against the values from *before* the path changes them. So a watcher always reacts one step after the path sets a value. You can see it in every trace: the path sets `action = 6` at one step, and prop2 only moves to `f1` at the next one.
 
 ### prop1
 
-prop1 checks the protection values (`integ_r`, `integ_cr`, `p`, `s`). It reaches `ok` when integrity is requested on a protected enclave with a signature service, and later integrity control is requested on a protected enclave. It reaches `Error` if integrity is requested on an enclave that isn't protected.
+prop1 looks at the protection values (`integ_r`, `integ_cr`, `p`, `s`).
 
-prop1 is the same in the original and in the extended model.
+It gets to `ok` when integrity is first requested on a protected enclave with a signature service, and later integrity control is requested while the enclave is still protected. It ends up in `Error` if integrity is requested on an enclave that isn't protected.
+
+prop1 is exactly the same in the original and in the extended model.
 
 ### prop2
 
-prop2 checks the order of the f and g functions:
+prop2 looks at the order in which the f and g functions are applied:
 
 - An f followed by its inverse (or the inverse followed by f) cancels out, and prop2 goes back to `invariant`.
-- One g is fine (`g`). A second g leads to `at_least_2_g`.
-- After a g, an f can still be applied and undone (`g_f`, `g_inv_f`), and prop2 goes back to `g`.
-- Applying the same f twice, or a g while an f is still applied, is **unmanaged**: prop2 goes into an `unmanaged_*` state and stays there.
+- One g is fine and prop2 goes to `g`. A second g sends it to `at_least_2_g`.
+- After a g you can still apply an f and undo it (`g_f`, `g_inv_f`), and prop2 comes back to `g`.
+- Applying the same f twice, or a g while an f is still applied, is "unmanaged": prop2 goes into one of the `unmanaged_*` states and stays there.
 
 ## Extended model: f1, f2, g1, g2, g3
 
 ### The functions
 
-`functions.py` lists the functions. The f functions have an inverse, the g functions don't.
+They're listed in `functions.py`. The f functions have an inverse, the g functions don't:
 
 ```python
 F_FUNCTIONS = {"f1": (6, 7), "f2": (8, 9)}
 G_FUNCTIONS = {"g1": 10, "g2": 11, "g3": 12}
 ```
 
-With `n = 2` and `m = 3`, the XML numbering gives:
+So with `n = 2` and `m = 3`, following the numbering from the XML:
 
-| Function | `action` | Inverse  | `action` |
-|----------|----------|----------|----------|
-| f1       | 6        | inv_f1   | 7        |
-| f2       | 8        | inv_f2   | 9        |
-| g1       | 10       | none     |          |
-| g2       | 11       | none     |          |
-| g3       | 12       | none     |          |
+- f1 is `6` and its inverse inv_f1 is `7`
+- f2 is `8` and its inverse inv_f2 is `9`
+- g1 is `10`, g2 is `11`, g3 is `12`, and they have no inverse
 
-`action_codes(f_functions, g_functions)` turns these into one table from name to number (`{"f1": 6, "inv_f1": 7, ...}`), used to build the paths.
+`action_codes(f_functions, g_functions)` puts all of these in one dictionary from name to number (`{"f1": 6, "inv_f1": 7, ...}`). The paths use it to turn names into numbers.
 
 ### The extended prop2
 
-`build_prop2_fg(f_functions, g_functions)` builds prop2 from any list of f and g functions. It uses the same rules as the original prop2, repeated for each f:
+`build_prop2_fg(f_functions, g_functions)` builds prop2 for whatever f and g functions you give it. The rules are the ones from the original prop2, just repeated for every f. Below, `fi` means any of the f functions and `fj` means a different one.
 
-| From state           | Action seen          | Goes to                     |
-|----------------------|----------------------|-----------------------------|
-| start                | anything             | `invariant`                 |
-| `invariant`          | fi                   | `fi`                        |
-| `invariant`          | inv_fi               | `inv_fi`                    |
-| `invariant`          | any g                | `g`                         |
-| `fi`                 | inv_fi               | `invariant`                 |
-| `inv_fi`             | fi                   | `invariant`                 |
-| `fi`                 | fi again             | `unmanaged_fi_twice`        |
-| `inv_fi`             | inv_fi again         | `unmanaged_inv_fi_twice`    |
-| `fi` / `inv_fi`      | any g                | `unmanaged_fi_g` / `unmanaged_inv_fi_g` |
-| `fi` / `inv_fi`      | a different fj or inv_fj | `unmanaged_<first>_<second>`, e.g. `unmanaged_f1_inv_f2` |
-| `g`                  | fi                   | `g_fi`                      |
-| `g`                  | inv_fi               | `g_inv_fi`                  |
-| `g`                  | any g                | `at_least_2_g`              |
-| `g_fi`               | inv_fi               | `g`                         |
-| `g_inv_fi`           | fi                   | `g`                         |
-| `g_fi` / `g_inv_fi`  | the same function again | `unmanaged_fi_twice` / `unmanaged_inv_fi_twice` |
-| `g_fi` / `g_inv_fi`  | any g                | `at_least_2_g`              |
-| `g_fi` / `g_inv_fi`  | a different fj or inv_fj | `unmanaged_<first>_<second>` |
+From the start, prop2 always goes to `invariant` on the first step.
 
-The g functions are treated as one group: g1, g2 and g3 all count as "a g", so `g1` then `g3` leads to `at_least_2_g`.
+From `invariant`:
 
-Any action not in the table (for example `1` or `3`) doesn't move prop2.
+- `fi` takes it to `fi`, and `inv_fi` takes it to `inv_fi`.
+- Any g takes it to `g`.
 
-With f1, f2, g1, g2, g3 this gives **28 states and 71 arrows**:
+From `fi` (an f is applied and not undone yet):
 
-- 1 start state, `invariant` and `g`
-- 8 states with a function still applied: `f1`, `inv_f1`, `f2`, `inv_f2`, `g_f1`, `g_inv_f1`, `g_f2`, `g_inv_f2`
-- 17 final states, which have no arrows out: `at_least_2_g` and 16 `unmanaged_*` states
+- `inv_fi` undoes it and goes back to `invariant`.
+- `fi` again goes to `unmanaged_fi_twice`.
+- Any g goes to `unmanaged_fi_g`.
+- A different function `fj` or `inv_fj` goes to `unmanaged_fi_fj` or `unmanaged_fi_inv_fj`, for example `unmanaged_f1_inv_f2`.
 
-Run `python3 prop2_fg.py` to see every arrow.
+From `inv_fi` it's the same idea, mirrored:
 
-### Differences from the original prop2
+- `fi` undoes it and goes back to `invariant`.
+- `inv_fi` again goes to `unmanaged_inv_fi_twice`.
+- Any g goes to `unmanaged_inv_fi_g`.
+- A different function goes to `unmanaged_inv_fi_fj` or `unmanaged_inv_fi_inv_fj`.
 
-With only one f and one g, the extended prop2 is the original prop2, except for these points:
+From `g`:
 
-1. **State names.** `unmanaged_f2` in the original means "f applied twice". With a function called `f2` that name would be confusing, so it is now `unmanaged_f1_twice` (and `unmanaged_inv_f1_twice` for `unmanaged_inv_f2`).
-2. **Mixing two f functions.** The original has only one f, so it has no rule for this. In the extended model, applying a different f (or its inverse) while one is still applied leads to an `unmanaged_<first>_<second>` state.
-3. **The `g_f` state.** In the XML, `g_f` goes to `unmanaged_f2` on a g (`action == 8`) and has no arrow for f applied again. That looks like a mistake in the XML, because `g_inv_f` goes to `unmanaged_inv_f2` when inv_f is applied again. The extended model follows `g_inv_f`: in `g_fi`, applying `fi` again leads to `unmanaged_fi_twice`. `prop2.py` is unchanged and still matches the XML.
+- `fi` goes to `g_fi`, and `inv_fi` goes to `g_inv_fi`.
+- Any g goes to `at_least_2_g`.
+
+From `g_fi` (a g was applied, then an f that isn't undone yet):
+
+- `inv_fi` undoes the f and goes back to `g`.
+- `fi` again goes to `unmanaged_fi_twice`.
+- Any g goes to `at_least_2_g`.
+- A different function goes to the same `unmanaged_fi_...` state as from `fi`.
+
+From `g_inv_fi` it's the mirror of `g_fi`: `fi` goes back to `g`, `inv_fi` again goes to `unmanaged_inv_fi_twice`, any g goes to `at_least_2_g`, and a different function goes to `unmanaged_inv_fi_...`.
+
+A few more things worth knowing:
+
+- g1, g2 and g3 are all treated the same way, as "a g". So `g1` followed by `g3` also ends in `at_least_2_g`.
+- Actions that aren't a function at all, like `1` or `3`, don't move prop2.
+- `at_least_2_g` and all the `unmanaged_*` states are final: once prop2 gets there, it never leaves.
+
+With f1, f2, g1, g2, g3 that comes to 28 states and 71 arrows. There's the start, `invariant` and `g`. Then 8 states where a function is still applied: `f1`, `inv_f1`, `f2`, `inv_f2`, `g_f1`, `g_inv_f1`, `g_f2`, `g_inv_f2`. Last are 17 final states: `at_least_2_g` and 16 `unmanaged_*` ones. Run `python3 prop2_fg.py` to see every arrow.
+
+### What's different from the original prop2
+
+If you give it only one f and one g, the extended prop2 is the same as the original, apart from three things:
+
+1. **Names.** In the original, `unmanaged_f2` means "f applied twice". Now that there is a function called `f2`, that name would be confusing, so it became `unmanaged_f1_twice`. In the same way, `unmanaged_inv_f2` became `unmanaged_inv_f1_twice`.
+2. **Mixing two f functions.** The original only has one f, so it never had to decide this. Here, if you apply a different f (or its inverse) while one is still applied, prop2 goes to an `unmanaged_<first>_<second>` state.
+3. **The `g_f` state.** In the XML, `g_f` goes to `unmanaged_f2` when it sees a g (`action == 8`), and it has no arrow at all for f being applied again. That looks like a mistake in the XML, because `g_inv_f` does go to `unmanaged_inv_f2` when inv_f is applied again. So the extended model follows `g_inv_f`: in `g_fi`, applying `fi` again leads to `unmanaged_fi_twice`. `prop2.py` itself is untouched and still matches the XML.
 
 ### The paths
 
-`build_path(function_names)` builds a path like path8 from a list of function names. Every path has the same shape:
+`build_path(function_names)` builds a path like path8 out of a list of function names. Every path has the same shape:
 
-1. **Start step**: `action = 1` (creation) with `p`, `s` and `integ_r` true. This lets prop1 start well.
-2. **One step per function** in the list: `action` is the number of that function, all other values are false.
-3. **End step**: `action = 3` (read) with `p`, `s` and `integ_cr` true. This lets prop1 reach `ok`.
-4. **`end`**: repeats the end step forever, like path8.
+1. A start step with `action = 1` (creation), and `p`, `s` and `integ_r` set to true. This gets prop1 started on the right foot.
+2. One step for each function in the list. `action` is that function's number, and everything else is false.
+3. An end step with `action = 3` (read), and `p`, `s` and `integ_cr` set to true. This is what lets prop1 reach `ok`.
+4. The `end` state, which keeps repeating the end step, just like in path8.
 
-The states are named `state_1`, `state_2`, ... and `end`, like in path8. For example, `build_path(["inv_f", "f", "inv_f", "f", "g"])` with the numbers of the original model rebuilds path8 exactly.
+The states are named `state_1`, `state_2`, ... and `end`, like in path8. As a sanity check: `build_path(["inv_f", "f", "inv_f", "f", "g"])`, with the numbers from the original model, gives back path8 exactly.
 
-`PATHS` in `paths_fg.py` holds the example paths. Each one has a description, the list of functions, and the state prop2 should end in:
+The example paths live in `PATHS` in `paths_fg.py`. Each one has a short description, the functions it applies, and the state prop2 should end up in:
 
-| # | Path                                   | Functions                               | prop2 ends in          |
-|---|----------------------------------------|-----------------------------------------|------------------------|
-| 1 | f1 undone by inv_f1, then g2           | f1 → inv_f1 → g2                        | `g`                    |
-| 2 | f1 and f2 each undone, then g1         | f1 → inv_f1 → f2 → inv_f2 → g1          | `g`                    |
-| 3 | g3, then f2 undone by inv_f2           | g3 → f2 → inv_f2                        | `g`                    |
-| 4 | inv_f2 undone by f2                    | inv_f2 → f2                             | `invariant`            |
-| 5 | f1 left applied                        | f1                                      | `f1`                   |
-| 6 | two g functions                        | g1 → g3                                 | `at_least_2_g`         |
-| 7 | f1 applied twice                       | f1 → f1                                 | `unmanaged_f1_twice`   |
-| 8 | f1 then f2                             | f1 → f2                                 | `unmanaged_f1_f2`      |
-| 9 | f2 then g1                             | f2 → g1                                 | `unmanaged_f2_g`       |
+1. **f1 undone by inv_f1, then g2**: f1 → inv_f1 → g2. prop2 ends in `g`.
+2. **f1 and f2 each undone, then g1**: f1 → inv_f1 → f2 → inv_f2 → g1. prop2 ends in `g`.
+3. **g3, then f2 undone by inv_f2**: g3 → f2 → inv_f2. prop2 ends in `g`.
+4. **inv_f2 undone by f2**: inv_f2 → f2. prop2 ends back in `invariant`.
+5. **f1 left applied**: just f1. prop2 ends in `f1`.
+6. **two g functions**: g1 → g3. prop2 ends in `at_least_2_g`.
+7. **f1 applied twice**: f1 → f1. prop2 ends in `unmanaged_f1_twice`.
+8. **f1 then f2**: f1 → f2. prop2 ends in `unmanaged_f1_f2`.
+9. **f2 then g1**: f2 → g1. prop2 ends in `unmanaged_f2_g`.
 
-All 9 paths reach `prop1.ok` together with the prop2 state in the table.
+All 9 of them reach `prop1.ok` together with the prop2 state listed above.
 
 ### The iterations
 
-`iterations_fg.py` runs every path from `PATHS` together with prop1 and the extended prop2. For each path it asks the question `E<>( prop1.ok && prop2.<expected state>)`: can the system reach a state where prop1 is in `ok` and prop2 is in the expected state? It then prints the shortest list of steps that gets there, or `NOT satisfied` if there is none.
+`iterations_fg.py` takes every path from `PATHS` and runs it together with prop1 and the extended prop2.
 
-It reuses `find_trace` and `print_trace` from `witness.py`, so the output looks the same as `python3 witness.py`.
+For each path it asks `E<>( prop1.ok && prop2.<expected state>)`. In plain words: can the system get to a point where prop1 is in `ok` and prop2 is in the state we expect? If it can, it prints the shortest list of steps that gets there. If not, it prints `NOT satisfied`.
+
+It reuses `find_trace` and `print_trace` from `witness.py`, so the output looks just like `python3 witness.py`.
 
 ### Reading the output
 
-This is path 8 (`f1 → f2`):
+Here is path 8 (`f1 → f2`):
 
 ```
 === f1 then f2: f1 -> f2 ===
@@ -223,16 +222,18 @@ E<>( prop1.ok && prop2.unmanaged_f1_f2)
 5. end(id4) ok(id18) unmanaged_f1_f2(l6) | action=3 integ_cr=True integ_r=False p=True s=True
 ```
 
-- The numbered lines (`0.`, `1.`, ...) are the state of the whole system: the path, prop1, prop2, and then the values after `|`.
-- Each state is written as `name(id)`. States without a name show only their id, for example `(id16)` is the start of prop1 and `(l0)` is the start of prop2.
-- The indented lines are the step the path takes, with the values it sets.
-- prop1 and prop2 react one line later than the values: `action=6` (f1) is set in line 2, and prop2 moves to `f1` in line 3. `action=8` (f2) is set in line 3, and prop2 moves to `unmanaged_f1_f2` in line 4.
-- The last line is the state that answers the question: prop1 is in `ok` and prop2 is in `unmanaged_f1_f2`.
+How to read it:
+
+- The numbered lines (`0.`, `1.`, ...) show where the whole system is: first the path, then prop1, then prop2, and after the `|` the current values.
+- Every state is written as `name(id)`. States that have no name only show their id. For example `(id16)` is where prop1 starts and `(l0)` is where prop2 starts.
+- The indented lines are the step the path takes, along with the values it sets.
+- The watchers are always one line behind the values. `action=6` (f1) is set on line 2, and prop2 moves to `f1` on line 3. Then `action=8` (f2) is set on line 3, and prop2 moves to `unmanaged_f1_f2` on line 4.
+- The last line is the answer to the question: prop1 is in `ok` and prop2 is in `unmanaged_f1_f2`.
 
 ### Adding a function or a path
 
-- **New f function**: add it to `F_FUNCTIONS` with its number and the number of its inverse, for example `"f3": (13, 14)`. Keep the numbers different from every other function.
-- **New g function**: add it to `G_FUNCTIONS`, for example `"g4": 15`.
-- **New path**: add a line to `PATHS` with a description, the list of function names and the state prop2 should end in, for example `("f2 undone, then two g", ["f2", "inv_f2", "g1", "g2"], "at_least_2_g")`.
+- **A new f function**: add it to `F_FUNCTIONS` with its number and the number of its inverse, for example `"f3": (13, 14)`. Just make sure the numbers aren't used by any other function.
+- **A new g function**: add it to `G_FUNCTIONS`, for example `"g4": 15`.
+- **A new path**: add a line to `PATHS` with a description, the function names and the state prop2 should end in, for example `("f2 undone, then two g", ["f2", "inv_f2", "g1", "g2"], "at_least_2_g")`.
 
-`build_prop2_fg` and `build_path` pick up the changes on their own; then run `python3 iterations_fg.py` again.
+`build_prop2_fg` and `build_path` pick up the changes on their own. After that, just run `python3 iterations_fg.py` again.

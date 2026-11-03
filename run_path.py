@@ -1,4 +1,5 @@
-"""Run any sequence of functions through prop1 and the extended prop2.
+"""
+Run any sequence of functions through prop1 and the extended prop2.
 
 Usage:
     python3 run_path.py f1 inv_f1 g2

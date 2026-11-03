@@ -25,6 +25,8 @@ Extended model:
 - prop2_fg.py - builds prop2 for any list of f and g functions
 - paths_fg.py - builds a path from a list of function names, and has the example paths
 - iterations_fg.py - runs every example path against prop1 and the extended prop2 and prints each step
+- export_uppaal.py - writes the extended model to a UPPAAL XML file
+- check_export.py - checks that the exported XML matches the Python automata and the original XML
 
 
 ## How to run
@@ -217,3 +219,24 @@ Adding a function or a path
 - new path: add a line to PATHS with a description, the function names and the state prop2 should end in, for example ("f2 undone, then two g", ["f2", "inv_f2", "g1", "g2"], "at_least_2_g")
 
 build_prop2_fg and build_path pick up the changes by themselves. Then run python3 iterations_fg.py again.
+
+
+## Export to UPPAAL
+
+export_uppaal.py writes the extended model as a UPPAAL XML file, so it can be opened in UPPAAL 5.0. Each file has three automata: prop1, the extended prop2 (f1, f2, g1, g2, g3) and a path built from the functions you give it.
+
+    python3 export_uppaal.py f1 inv_f1 g2   (writes exports/export_f1_inv_f1_g2.xml)
+    python3 export_uppaal.py                (writes one file for every path in PATHS)
+
+The files go in the exports folder, which is created if it doesn't exist.
+
+Each file comes with three queries:
+- E<>( prop1.ok && prop2.<state>), where the state is the one from PATHS, or computed like run_path.py does it. It should be satisfied
+- A[] not deadlock, which should be satisfied because the path loops forever in end
+- E<> prop1.Error, which should not be satisfied because every path starts on a protected enclave
+
+To open a file, start UPPAAL with uppaal-5.0.0-linux64/uppaal and use File > Open System. The Editor tab shows the drawn automata (path in a line, prop2 in layers by distance from the start, prop1 with the coordinates from fichier_f_ref.xml). The Simulator tab lets you step through it, and the Verifier tab has the queries ready to check. From the command line you can also run:
+
+    uppaal-5.0.0-linux64/bin/verifyta exports/export_f1_inv_f1_g2.xml
+
+python3 check_export.py checks the export: it reads every exported file back and compares it with the Python automata, exports the original model again and compares it with fichier_f_ref.xml, and runs verifyta on each file if it is installed.
